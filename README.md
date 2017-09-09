@@ -7,7 +7,9 @@
 * Mongoose
 * MongoDB
 
-
+## Running the application
+* DEBUG=express-locallibrary-tutorial:* npm start
+* DEBUG=express-locallibrary-tutorial:* npm run devstart
 
 ## Requirements
 * Library staff will use the Local Library website to store information about books and borrowers
