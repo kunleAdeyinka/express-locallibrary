@@ -6,6 +6,7 @@
 * Express
 * Mongoose
 * MongoDB
+* Pug
 
 ## Running the application
 * DEBUG=express-locallibrary-tutorial:* npm start
