@@ -28,6 +28,12 @@ block content
         p #[strong Due back:] #{val.book_due_date}
       p #[strong Id:]&nbsp;
         a(href=val.url) #{val._id}
- 
+      hr
+      
     else
       p There are no copies of this book in the library.
+      
+    p
+      a(href=book.url+'/delete') Delete Book
+    p
+      a(href=book.url+'/update') Update Book

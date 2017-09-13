@@ -32,22 +32,93 @@ exports.author_detail = function(req, res,next){
 
 // Display Author create form on GET
 exports.author_create_get = function(req, res){
-    res.send('NOT IMPLEMENTED: Author create GET');
+    res.render('author_form', { title: 'Create Author'});
 };
 
 // handle author create POST
-exports.author_create_post = function(req, res){
-   res.send('NOT IMPLEMENTED: Author create POST'); 
+exports.author_create_post = function(req, res,next){
+   
+    req.checkBody('first_name', 'First name must be specified.').notEmpty(); //We won't force Alphanumeric, because people might have spaces.
+    req.checkBody('family_name', 'Family name must be specified.').notEmpty();
+    req.checkBody('family_name', 'Family name must be alphanumeric text.').isAlpha();
+    req.checkBody('date_of_birth', 'Invalid date').optional({ checkFalsy: true }).isDate();
+    req.checkBody('date_of_death', 'Invalid date').optional({ checkFalsy: true }).isDate();
+    
+    req.sanitize('first_name').escape();
+    req.sanitize('family_name').escape();
+    req.sanitize('first_name').trim();     
+    req.sanitize('family_name').trim();
+    req.sanitize('date_of_birth').toDate();
+    req.sanitize('date_of_death').toDate();
+    
+    var errors = req.validationErrors();
+    
+    var author = new Author(
+        {
+            first_name: req.body.first_name, 
+            family_name: req.body.family_name, 
+            date_of_birth: req.body.date_of_birth,
+            date_of_death: req.body.date_of_death
+        }
+    );
+    
+    if (errors) {
+        res.render('author_form', { title: 'Create Author', author: author, errors: errors});
+        return;
+    }else {
+        author.save(function (err) {
+            if (err) { return next(err); }
+               //successful - redirect to new author record.
+               res.redirect(author.url);
+        });
+    } 
 };
 
 //display author delete form on GET
-exports.author_delete_get = function(req, res){
-    res.send('NOT IMPLEMENTED: Author delete GET');
+exports.author_delete_get = function(req, res, next){
+    async.parallel({
+        author: function(callback){
+            Author.findById(req.params.id).exec(callback);
+        },
+        authors_books: function(callback){
+            Book.find({ 'author': req.params.id }).exec(callback);
+        }
+    }, function(err, results){
+        if(err){return next(err);}
+        res.render('author_delete', { title: 'Delete Author', author: results.author, author_books: results.authors_books } );
+    });
 };
 
 //handle author delete on POST
-exports.author_delete_post = function(req, res){
-   res.send('NOT IMPLEMENTED: Author delete POST'); 
+exports.author_delete_post = function(req, res, next){
+    
+   req.checkBody('authorid', 'Author id must exist').notEmpty();
+   
+   async.parallel({
+       author: function(callback){
+           Author.findById(req.body.authorid).exec(callback);
+       },
+       authors_books: function(callback){
+           Book.find({ 'author': req.body.authorid },'title summary').exec(callback);
+       }
+   }, function(err, results) {
+       if (err) { return next(err); }
+        //Success
+        if (results.authors_books.length > 0) {
+            //Author has books. Render in same way as for GET route.
+            res.render('author_delete', { title: 'Delete Author', author: results.author, author_books: results.authors_books } );
+            return;
+        }
+        else {
+            //Author has no books. Delete object and redirect to the list of authors.
+            Author.findByIdAndRemove(req.body.authorid, function deleteAuthor(err) {
+                if (err) { return next(err); }
+                //Success - got to author list
+                res.redirect('/catalog/authors');
+            });
+
+        }
+   });
 };
 
 //display author update form on GET
